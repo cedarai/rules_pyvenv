@@ -29,7 +29,8 @@ EnvFile = collections.namedtuple("EnvFile", ["path", "env_path"])
 
 
 def console_script(env_path: pathlib.Path, module: str, func: str) -> str:
-    return textwrap.dedent(f"""\
+    return textwrap.dedent(
+        f"""\
         #!{env_path / "bin/python3"}
         # -*- coding: utf-8 -*-
         import re
@@ -38,18 +39,19 @@ def console_script(env_path: pathlib.Path, module: str, func: str) -> str:
         if __name__ == '__main__':
             sys.argv[0] = re.sub(r'(-script\\.pyw|\\.exe)?$', '', sys.argv[0])
             sys.exit({func}())
-        """)
+        """
+    )
 
 
 def get_env_path(path: str, imports: List[str]) -> Optional[str]:
     if not path.startswith("../"):
         return path
-    
+
     for imp in imports:
         prefix = f"../{imp}/"
         if path.startswith(prefix):
-            return path[len(prefix):]
-    
+            return path[len(prefix) :]
+
     # External file that didn't match imports. Don't include it in the venv.
     return None
 
@@ -73,7 +75,7 @@ def find_site_packages(env_path: pathlib.Path) -> pathlib.Path:
 
 def get_files(build_env_input: Dict) -> List[EnvFile]:
     files = []
-    
+
     imports = build_env_input["imports"]
     for depfile in build_env_input["files"]:
         # Bucket files into external and workspace groups.
@@ -102,7 +104,9 @@ def generate_console_scripts(env_path: pathlib.Path) -> None:
         script = bin / ep.name
         if script.exists():
             continue
-        script.write_text(console_script(env_path, ep.module_name, ep.object_name), encoding="utf-8")
+        script.write_text(
+            console_script(env_path, ep.module_name, ep.object_name), encoding="utf-8"
+        )
         script.chmod(0o755)
 
 
@@ -123,7 +127,9 @@ def run_additional_commands(env_path: pathlib.Path, commands: List[str]) -> None
     for zsh in ["/bin/zsh", "/usr/bin/zsh"]:
         if pathlib.Path(zsh).exists():
             shell = zsh
-    ret = subprocess.run(full_command, capture_output=False, shell=True, executable=shell)
+    ret = subprocess.run(
+        full_command, capture_output=False, shell=True, executable=shell
+    )
     ret.check_returncode()
 
 
@@ -165,6 +171,5 @@ def main():
         run_additional_commands(env_path, extra_commands)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
-
