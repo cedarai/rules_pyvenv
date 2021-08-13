@@ -1,0 +1,16 @@
+package(default_visibility = ["//visibility:public"])
+
+load("@rules_pyvenv//:venv.bzl", "py_venv")
+load("@example_deps//:requirements.bzl", "requirement")
+
+py_venv(
+    name = "venv",
+    deps = [
+        requirement("black"),
+        requirement("numpy"),
+    ],
+    extra_pip_commands = [
+        "install ipython jupyter-console"
+    ]
+)
+
