@@ -19,7 +19,7 @@ import pathlib
 import subprocess
 import sys
 import textwrap
-from typing import List, Optional
+from typing import Dict, List, Optional
 import venv
 
 import entrypoints
@@ -71,13 +71,11 @@ def find_site_packages(env_path: pathlib.Path) -> pathlib.Path:
     raise Exception("Unable to find site-packages path in venv")
 
 
-def read_deps_file(filename: str) -> List[EnvFile]:
+def get_files(build_env_input: Dict) -> List[EnvFile]:
     files = []
-    with open(filename) as f:
-        deps = json.load(f)
     
-    imports = deps["imports"]
-    for depfile in deps["files"]:
+    imports = build_env_input["imports"]
+    for depfile in build_env_input["files"]:
         # Bucket files into external and workspace groups.
         # Only generated workspace files are kept.
         type_ = depfile["t"]
@@ -130,12 +128,15 @@ def run_additional_commands(env_path: pathlib.Path, commands: List[str]) -> None
 
 
 def main():
-    if "DEPS_FILE" not in os.environ:
-        raise Exception("Missing DEPS_FILE env var")
+    if "BUILD_ENV_INPUT" not in os.environ:
+        raise Exception("Missing BUILD_ENV_INPUT environment variable")
     if len(sys.argv) != 2:
         raise Exception(f"Usage: {sys.argv} <venv path>")
 
-    files = read_deps_file(os.environ["DEPS_FILE"])
+    with open(os.environ["BUILD_ENV_INPUT"]) as f:
+        build_env_input = json.load(f)
+
+    files = get_files(build_env_input)
 
     # Hack: fully resolve the current interpreter's known path to get venv to link to the
     # files in their actual location
@@ -158,9 +159,9 @@ def main():
 
     generate_console_scripts(env_path)
 
-    extra_commands = os.environ.get("EXTRA_PIP_COMMANDS")
+    extra_commands = build_env_input.get("commands")
     if extra_commands:
-        run_additional_commands(env_path, extra_commands.split("\n"))
+        run_additional_commands(env_path, extra_commands)
 
 
 if __name__ == '__main__':

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@rules_python//python:defs.bzl", "py_binary")
 load("@rules_pyvenv_deps//:requirements.bzl", "requirement")
 
 def _py_venv_deps_impl(ctx):
@@ -34,6 +35,7 @@ def _py_venv_deps_impl(ctx):
     doc = {
         "imports": list(imports),
         "files": files,
+        "commands": ctx.attr.commands,
     }
     ctx.actions.write(out, json.encode(doc))
 
@@ -43,6 +45,7 @@ _py_venv_deps = rule(
     implementation = _py_venv_deps_impl,
     attrs = {
         "deps": attr.label_list(),
+        "commands": attr.string_list(),
         "output": attr.output(),
     },
 )
@@ -51,28 +54,23 @@ def py_venv(name, deps = None, extra_pip_commands = None):
     deps = deps or []
     extra_pip_commands = extra_pip_commands or []
 
-    for cmd in extra_pip_commands:
-        if "\n" in cmd:
-            fail("extra_pip_commands cannot contain newlines")
-
     deps_name = "_" + name + "_deps"
     out_name = deps_name + ".txt"
     out_label = ":" + out_name
     _py_venv_deps(
         name = deps_name,
         deps = deps,
+        commands = extra_pip_commands,
         output = out_name,
     )
 
-    native.py_binary(
+    py_binary(
         name = name,
         srcs = ["@rules_pyvenv//:build_env.py"],
         deps = [requirement("entrypoints")],
         data = [out_label] + deps,
         main = "@rules_pyvenv//:build_env.py",
         env = {
-            "DEPS_FILE": "$(location " + out_label + ")",
-            "EXTRA_PIP_COMMANDS": "\n".join(extra_pip_commands),
+            "BUILD_ENV_INPUT": "$(location " + out_label + ")",
         },
     )
-
