@@ -33,7 +33,7 @@ def _py_venv_deps_impl(ctx):
         files.append({"t": typ, "p": dep.short_path})
 
     doc = {
-        "imports": list(imports),
+        "imports": imports,
         "files": files,
         "commands": ctx.attr.commands,
     }
@@ -55,7 +55,7 @@ def py_venv(name, deps = None, extra_pip_commands = None):
     extra_pip_commands = extra_pip_commands or []
 
     deps_name = "_" + name + "_deps"
-    out_name = deps_name + ".txt"
+    out_name = deps_name + ".json"
     out_label = ":" + out_name
     _py_venv_deps(
         name = deps_name,

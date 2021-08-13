@@ -154,8 +154,9 @@ def main():
         path = pathlib.Path(file.path)
 
         site_path = site_packages_path / site_suffix
-        site_path.parent.mkdir(parents=True, exist_ok=True)
-        site_path.symlink_to(path.resolve())
+        if not site_path.exists():
+            site_path.parent.mkdir(parents=True, exist_ok=True)
+            site_path.symlink_to(path.resolve())
 
     generate_console_scripts(env_path)
 
