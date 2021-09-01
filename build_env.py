@@ -25,7 +25,7 @@ import venv
 import entrypoints
 
 
-EnvFile = collections.namedtuple("EnvFile", ["path", "env_path"])
+EnvFile = collections.namedtuple("EnvFile", ["path", "site_packages_path"])
 
 
 def console_script(env_path: pathlib.Path, module: str, func: str) -> str:
@@ -43,7 +43,7 @@ def console_script(env_path: pathlib.Path, module: str, func: str) -> str:
     )
 
 
-def get_env_path(path: str, imports: List[str]) -> Optional[str]:
+def get_site_packages_path(path: str, imports: List[str]) -> Optional[str]:
     if not path.startswith("../"):
         return path
 
@@ -83,16 +83,41 @@ def get_files(build_env_input: Dict) -> List[EnvFile]:
         type_ = depfile["t"]
         path = depfile["p"]
 
-        env_path = get_env_path(path, imports)
-        if not env_path:
+        site_packages_path = get_site_packages_path(path, imports)
+        if not site_packages_path:
             continue
 
         if is_external(path):
-            files.append(EnvFile(path, env_path))
+            files.append(EnvFile(pathlib.Path(path), pathlib.Path(site_packages_path)))
         elif type_ == "G":
-            files.append(EnvFile(path, env_path))
+            files.append(EnvFile(pathlib.Path(path), pathlib.Path(site_packages_path)))
 
     return files
+
+
+def is_data_file(file: EnvFile) -> bool:
+    return file.site_packages_path.parts[0].endswith(".data")
+
+
+def install_data_file(env_path: pathlib.Path, file: EnvFile) -> None:
+    if len(file.site_packages_path.parts) > 2 and file.site_packages_path.parts[1] == "scripts":
+        install_included_script(env_path, file.path)
+
+
+def install_site_file(site_packages_path: pathlib.Path, file: EnvFile) -> None:
+    site_path = site_packages_path / file.site_packages_path
+    if not site_path.exists():
+        site_path.parent.mkdir(parents=True, exist_ok=True)
+        site_path.symlink_to(file.path.resolve())
+
+
+def install_files(env_path: pathlib.Path, files: List[EnvFile]) -> None:
+    site_packages_path = find_site_packages(env_path)
+    for file in files:
+        if is_data_file(file):
+            install_data_file(env_path, file)
+        else:
+            install_site_file(site_packages_path, file)
 
 
 def generate_console_scripts(env_path: pathlib.Path) -> None:
@@ -104,10 +129,23 @@ def generate_console_scripts(env_path: pathlib.Path) -> None:
         script = bin / ep.name
         if script.exists():
             continue
-        script.write_text(
-            console_script(env_path, ep.module_name, ep.object_name), encoding="utf-8"
-        )
+        script.write_text(console_script(env_path, ep.module_name, ep.object_name), encoding="utf-8")
         script.chmod(0o755)
+
+
+def install_included_script(env_path: pathlib.Path, script_file: pathlib.Path) -> None:
+    script_text = script_file.read_bytes()
+
+    # From pep-491:
+    #   Python scripts must appear in scripts and begin with exactly b'#!python' in order to enjoy script wrapper
+    #   generation and #!python rewriting at install time. They may have any or no extension.
+    if script_text.startswith(b"#!python"):
+        shebang = f'#!{env_path / "bin/python3"}'.encode("utf-8")
+        script_text = shebang + script_text[len(b"#!python") :]
+
+    script = env_path / "bin" / script_file.name
+    script.write_bytes(script_text)
+    script.chmod(0o755)
 
 
 def run_additional_commands(env_path: pathlib.Path, commands: List[str]) -> None:
@@ -127,9 +165,7 @@ def run_additional_commands(env_path: pathlib.Path, commands: List[str]) -> None
     for zsh in ["/bin/zsh", "/usr/bin/zsh"]:
         if pathlib.Path(zsh).exists():
             shell = zsh
-    ret = subprocess.run(
-        full_command, capture_output=False, shell=True, executable=shell
-    )
+    ret = subprocess.run(full_command, capture_output=False, shell=True, executable=shell)
     ret.check_returncode()
 
 
@@ -154,16 +190,7 @@ def main():
     builder = venv.EnvBuilder(clear=True, symlinks=True, with_pip=True)
     builder.create(str(env_path))
 
-    site_packages_path = find_site_packages(env_path)
-    for file in files:
-        site_suffix = file.env_path
-        path = pathlib.Path(file.path)
-
-        site_path = site_packages_path / site_suffix
-        if not site_path.exists():
-            site_path.parent.mkdir(parents=True, exist_ok=True)
-            site_path.symlink_to(path.resolve())
-
+    install_files(env_path, files)
     generate_console_scripts(env_path)
 
     extra_commands = build_env_input.get("commands")
