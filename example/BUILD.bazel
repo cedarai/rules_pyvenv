@@ -16,6 +16,7 @@ package(default_visibility = ["//visibility:public"])
 
 load("@rules_pyvenv//:venv.bzl", "py_venv")
 load("@example_deps//:requirements.bzl", "requirement")
+load("@rules_python//python/pip_install:requirements.bzl", "compile_pip_requirements")
 
 py_venv(
     name = "venv",
@@ -28,3 +29,9 @@ py_venv(
     ]
 )
 
+compile_pip_requirements(
+    name = "requirements",
+    extra_args = ["--allow-unsafe"],
+    requirements_in = "requirements.in",
+    requirements_txt = "requirements.txt",
+)

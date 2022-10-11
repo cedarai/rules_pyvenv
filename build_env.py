@@ -13,16 +13,19 @@
 # limitations under the License.
 
 import collections
+import functools
+import itertools
 import json
+import operator
 import os
 import pathlib
 import subprocess
 import sys
 import textwrap
-from typing import Dict, List, Optional
 import venv
-
-import entrypoints
+from importlib import metadata
+from importlib.metadata._itertools import unique_everseen
+from typing import Dict, List, Optional, Union
 
 
 EnvFile = collections.namedtuple("EnvFile", ["path", "site_packages_path"])
@@ -124,16 +127,26 @@ def install_files(env_path: pathlib.Path, files: List[EnvFile]) -> None:
             install_site_file(site_packages_path, file)
 
 
+# A copy of importlib.metadata:entry_points that takes a list of search paths.
+def entry_points(path: List[str], **params) -> Union[metadata.EntryPoints, metadata.SelectableGroups]:
+    norm_name = operator.attrgetter('_normalized_name')
+    unique = functools.partial(unique_everseen, key=norm_name)
+    eps = itertools.chain.from_iterable(
+        dist.entry_points for dist in unique(metadata.distributions(path=path))
+    )
+    return metadata.SelectableGroups.load(eps).select(**params)
+
+
 def generate_console_scripts(env_path: pathlib.Path) -> None:
     site_packages = find_site_packages(env_path)
     bin = env_path / "bin"
 
-    entry_points = entrypoints.get_group_all("console_scripts", [str(site_packages)])
-    for ep in entry_points:
+    console_scripts = entry_points(path=[str(site_packages)], group='console_scripts')
+    for ep in console_scripts:
         script = bin / ep.name
         if script.exists():
             continue
-        script.write_text(console_script(env_path, ep.module_name, ep.object_name), encoding="utf-8")
+        script.write_text(console_script(env_path, ep.module, ep.attr), encoding="utf-8")
         script.chmod(0o755)
 
 

@@ -13,7 +13,6 @@
 # limitations under the License.
 
 load("@rules_python//python:defs.bzl", "py_binary")
-load("@rules_pyvenv_deps//:requirements.bzl", "requirement")
 
 def _py_venv_deps_impl(ctx):
     imports = []
@@ -67,7 +66,6 @@ def py_venv(name, deps = None, extra_pip_commands = None):
     py_binary(
         name = name,
         srcs = ["@rules_pyvenv//:build_env.py"],
-        deps = [requirement("entrypoints")],
         data = [out_label] + deps,
         main = "@rules_pyvenv//:build_env.py",
         env = {

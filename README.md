@@ -12,9 +12,6 @@ http_archive(
     strip_prefix = "rules_pyvenv-main",
     url = "https://github.com/cedarai/rules_pyvenv/archive/main.tar.gz",
 )
-
-load("@rules_pyvenv//:repositories.bzl", rules_pyvenv_repositories = "repositories")
-rules_pyvenv_repositories()
 ```
 
 These rules require a recent version of Python 3.6+ and `rules_python`.
