@@ -52,8 +52,10 @@ def get_site_packages_path(path: str, imports: List[str]) -> Optional[str]:
         if path.startswith(prefix):
             return path[len(prefix) :]
 
-    # External file that didn't match imports. Don't include it in the venv.
-    return None
+    # External file that didn't match imports. Include but warn.
+    parts = path.split("/", maxsplit=2)
+    include_path = parts[2]
+    print(f"Warning: [{path}] didn't match any imports. Including as [{include_path}]")
 
 
 def is_external(file_: str) -> bool:
