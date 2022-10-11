@@ -106,7 +106,10 @@ def is_data_file(file: EnvFile) -> bool:
 
 
 def install_data_file(env_path: pathlib.Path, file: EnvFile) -> None:
-    if len(file.site_packages_path.parts) > 2 and file.site_packages_path.parts[1] == "scripts":
+    if (
+        len(file.site_packages_path.parts) > 2
+        and file.site_packages_path.parts[1] == "scripts"
+    ):
         install_included_script(env_path, file.path)
 
 
@@ -125,10 +128,14 @@ def install_files(env_path: pathlib.Path, files: List[EnvFile]) -> None:
         else:
             install_site_file(site_packages_path, file)
 
+
 # A copy of importlib_metadata:entry_points that takes a list of search paths.
 def entry_points(path: List[str], **params) -> importlib_metadata.EntryPoints:
     eps = itertools.chain.from_iterable(
-        dist.entry_points for dist in importlib_metadata._unique(importlib_metadata.distributions(path=path))
+        dist.entry_points
+        for dist in importlib_metadata._unique(
+            importlib_metadata.distributions(path=path)
+        )
     )
     return importlib_metadata.EntryPoints(eps).select(**params)
 
@@ -137,12 +144,14 @@ def generate_console_scripts(env_path: pathlib.Path) -> None:
     site_packages = find_site_packages(env_path)
     bin = env_path / "bin"
 
-    console_scripts = entry_points(path=[str(site_packages)], group='console_scripts')
+    console_scripts = entry_points(path=[str(site_packages)], group="console_scripts")
     for ep in console_scripts:
         script = bin / ep.name
         if script.exists():
             continue
-        script.write_text(console_script(env_path, ep.module, ep.attr), encoding="utf-8")
+        script.write_text(
+            console_script(env_path, ep.module, ep.attr), encoding="utf-8"
+        )
         script.chmod(0o755)
 
 
@@ -166,7 +175,7 @@ def run_additional_commands(env_path: pathlib.Path, commands: List[str]) -> None
     for cmd in commands:
         pip_cmd = f"pip --no-input {cmd}"
         # Echo in green what command is being run
-        lines.append(fr'echo "\n\033[0;32m> {pip_cmd}\033[0m"')
+        lines.append(rf'echo "\n\033[0;32m> {pip_cmd}\033[0m"')
         lines.append(pip_cmd)
 
     full_command = ";".join(lines)
@@ -178,7 +187,9 @@ def run_additional_commands(env_path: pathlib.Path, commands: List[str]) -> None
     for zsh in ["/bin/zsh", "/usr/bin/zsh"]:
         if pathlib.Path(zsh).exists():
             shell = zsh
-    ret = subprocess.run(full_command, capture_output=False, shell=True, executable=shell)
+    ret = subprocess.run(
+        full_command, capture_output=False, shell=True, executable=shell
+    )
     ret.check_returncode()
 
 
