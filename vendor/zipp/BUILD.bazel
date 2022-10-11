@@ -1,0 +1,7 @@
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "zipp",
+    srcs = glob(["**/*.py"]),
+    imports = ["."],
+)

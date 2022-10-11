@@ -66,6 +66,7 @@ def py_venv(name, deps = None, extra_pip_commands = None):
     py_binary(
         name = name,
         srcs = ["@rules_pyvenv//:build_env.py"],
+	deps = ["@rules_pyvenv//vendor/importlib_metadata"],
         data = [out_label] + deps,
         main = "@rules_pyvenv//:build_env.py",
         env = {

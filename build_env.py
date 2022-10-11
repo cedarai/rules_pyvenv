@@ -16,16 +16,15 @@ import collections
 import functools
 import itertools
 import json
-import operator
 import os
 import pathlib
 import subprocess
 import sys
 import textwrap
 import venv
-from importlib import metadata
-from importlib.metadata._itertools import unique_everseen
 from typing import Dict, List, Optional, Union
+
+import importlib_metadata
 
 
 EnvFile = collections.namedtuple("EnvFile", ["path", "site_packages_path"])
@@ -126,15 +125,12 @@ def install_files(env_path: pathlib.Path, files: List[EnvFile]) -> None:
         else:
             install_site_file(site_packages_path, file)
 
-
-# A copy of importlib.metadata:entry_points that takes a list of search paths.
-def entry_points(path: List[str], **params) -> Union[metadata.EntryPoints, metadata.SelectableGroups]:
-    norm_name = operator.attrgetter('_normalized_name')
-    unique = functools.partial(unique_everseen, key=norm_name)
+# A copy of importlib_metadata:entry_points that takes a list of search paths.
+def entry_points(path: List[str], **params) -> importlib_metadata.EntryPoints:
     eps = itertools.chain.from_iterable(
-        dist.entry_points for dist in unique(metadata.distributions(path=path))
+        dist.entry_points for dist in importlib_metadata._unique(importlib_metadata.distributions(path=path))
     )
-    return metadata.SelectableGroups.load(eps).select(**params)
+    return importlib_metadata.EntryPoints(eps).select(**params)
 
 
 def generate_console_scripts(env_path: pathlib.Path) -> None:
