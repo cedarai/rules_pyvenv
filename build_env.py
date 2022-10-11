@@ -48,9 +48,11 @@ def get_site_packages_path(path: str, imports: List[str]) -> Optional[str]:
         return path
 
     for imp in imports:
-        prefix = f"../{imp}/"
-        if path.startswith(prefix):
-            return path[len(prefix) :]
+        # Newer versions of rules_python use a site-packages/ prefix, so we also check for that.
+        prefixes = [f"../{imp}/site-packages/", f"../{imp}/"]
+        for prefix in prefixes:
+            if path.startswith(prefix):
+                return path[len(prefix) :]
 
     # External file that didn't match imports. Include but warn.
     parts = path.split("/", maxsplit=2)
