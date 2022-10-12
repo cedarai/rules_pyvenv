@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import collections
-import functools
 import itertools
 import json
 import os
@@ -22,7 +21,7 @@ import subprocess
 import sys
 import textwrap
 import venv
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 import importlib_metadata
 
@@ -45,25 +44,40 @@ def console_script(env_path: pathlib.Path, module: str, func: str) -> str:
     )
 
 
-def get_site_packages_path(path: str, imports: List[str]) -> Optional[str]:
-    if not path.startswith("../"):
-        return path
+def path_starts_with(path: pathlib.Path, prefix: pathlib.Path) -> bool:
+    return path.parts[: len(prefix.parts)] == prefix.parts
+
+
+def get_site_packages_path(
+    workspace: str, path: pathlib.Path, imports: List[pathlib.Path]
+) -> Optional[pathlib.Path]:
+    # Import prefixes start with the workspace name, which might be the local workspace.
+    # We first normalize the given path so that it starts with its workspace name.
+    if path.parts[0] == "..":
+        wspath = path.relative_to("..")
+        is_external = True
+    else:
+        wspath = pathlib.Path(workspace) / path
+        is_external = False
 
     for imp in imports:
-        # Newer versions of rules_python use a site-packages/ prefix, so we also check for that.
-        prefixes = [f"../{imp}/site-packages/", f"../{imp}/"]
-        for prefix in prefixes:
-            if path.startswith(prefix):
-                return path[len(prefix) :]
+        if path_starts_with(wspath, imp):
+            return wspath.relative_to(imp)
+
+    if not is_external:
+        # If the input wasn't an external path and it didn't match any import prefixes,
+        # just return it as given.
+        return path
 
     # External file that didn't match imports. Include but warn.
-    parts = path.split("/", maxsplit=2)
-    include_path = parts[2]
+    # We include it as relative to its workspace directory, so strip the first component
+    # off wspath.
+    include_path = wspath.relative_to(wspath.parts[0])
     print(f"Warning: [{path}] didn't match any imports. Including as [{include_path}]")
 
 
-def is_external(file_: str) -> bool:
-    return file_.startswith("../")
+def is_external(file_: pathlib.Path) -> bool:
+    return file_.parts[0] == ".."
 
 
 def find_site_packages(env_path: pathlib.Path) -> pathlib.Path:
@@ -82,21 +96,32 @@ def find_site_packages(env_path: pathlib.Path) -> pathlib.Path:
 def get_files(build_env_input: Dict) -> List[EnvFile]:
     files = []
 
-    imports = build_env_input["imports"]
+    imports = [pathlib.Path(imp) for imp in build_env_input["imports"]]
+    print(imports)
+    workspace = build_env_input["workspace"]
     for depfile in build_env_input["files"]:
         # Bucket files into external and workspace groups.
         # Only generated workspace files are kept.
         type_ = depfile["t"]
-        path = depfile["p"]
+        input_path = pathlib.Path(depfile["p"])
 
-        site_packages_path = get_site_packages_path(path, imports)
-        if not site_packages_path:
+        # Only add external and generated files
+        if not (is_external(input_path) or type_ == "G"):
             continue
 
-        if is_external(path):
-            files.append(EnvFile(pathlib.Path(path), pathlib.Path(site_packages_path)))
-        elif type_ == "G":
-            files.append(EnvFile(pathlib.Path(path), pathlib.Path(site_packages_path)))
+        # If this is a directory, expand to each recursive child.
+        if input_path.is_dir():
+            paths = input_path.glob("**/*")
+            paths = [p for p in paths if not p.is_dir()]
+        else:
+            paths = [input_path]
+
+        for path in paths:
+            site_packages_path = get_site_packages_path(workspace, path, imports)
+            if not site_packages_path:
+                continue
+
+            files.append(EnvFile(path, site_packages_path))
 
     return files
 

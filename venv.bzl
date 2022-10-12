@@ -14,7 +14,12 @@
 
 load("@rules_python//python:defs.bzl", "py_binary")
 
+PYTHON_TOOLCHAIN_TYPE = "@bazel_tools//tools/python:toolchain_type"
+
 def _py_venv_deps_impl(ctx):
+    toolchain_depset = ctx.toolchains[PYTHON_TOOLCHAIN_TYPE].py3_runtime.files or depset()
+    toolchain_files = {f: None for f in toolchain_depset.to_list()}
+
     imports = []
     for dep in ctx.attr.deps:
         if PyInfo not in dep:
@@ -26,12 +31,16 @@ def _py_venv_deps_impl(ctx):
 
     files = []
     for dep in deps.to_list():
-        if dep.is_directory:
+        # Skip files that are provided by the python toolchain.
+        # They don't need to be in the venv.
+        if dep in toolchain_files:
             continue
+
         typ = "S" if dep.is_source else "G"
         files.append({"t": typ, "p": dep.short_path})
 
     doc = {
+        "workspace": ctx.workspace_name,
         "imports": imports,
         "files": files,
         "commands": ctx.attr.commands,
@@ -47,6 +56,7 @@ _py_venv_deps = rule(
         "commands": attr.string_list(),
         "output": attr.output(),
     },
+    toolchains = [PYTHON_TOOLCHAIN_TYPE],
 )
 
 def py_venv(name, deps = None, extra_pip_commands = None):
