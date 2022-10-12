@@ -97,7 +97,6 @@ def get_files(build_env_input: Dict) -> List[EnvFile]:
     files = []
 
     imports = [pathlib.Path(imp) for imp in build_env_input["imports"]]
-    print(imports)
     workspace = build_env_input["workspace"]
     for depfile in build_env_input["files"]:
         # Bucket files into external and workspace groups.
