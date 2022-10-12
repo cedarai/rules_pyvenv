@@ -4,6 +4,8 @@ See `example/` for an example.
 ## Installation
 Add the following to your `WORKSPACE`.
 
+(Note: see the releases page for release-specific `WORKSPACE` config)
+
 ```
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
