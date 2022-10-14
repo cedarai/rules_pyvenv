@@ -66,8 +66,8 @@ def get_site_packages_path(
 
     if not is_external:
         # If the input wasn't an external path and it didn't match any import prefixes,
-        # just return it as given.
-        return path
+        # return it after stripping the parent directory.
+        return path.relative_to(path.parts[0])
 
     # External file that didn't match imports. Include but warn.
     # We include it as relative to its workspace directory, so strip the first component
@@ -103,10 +103,6 @@ def get_files(build_env_input: Dict) -> List[EnvFile]:
         # Only generated workspace files are kept.
         type_ = depfile["t"]
         input_path = pathlib.Path(depfile["p"])
-
-        # Only add external and generated files
-        if not (is_external(input_path) or type_ == "G"):
-            continue
 
         # If this is a directory, expand to each recursive child.
         if input_path.is_dir():

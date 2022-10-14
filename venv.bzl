@@ -26,7 +26,8 @@ def _py_venv_deps_impl(ctx):
             continue
         imports.extend([i for i in dep[PyInfo].imports.to_list() if i not in imports])
 
-    deps = depset(transitive = [dep[DefaultInfo].default_runfiles.files for dep in ctx.attr.deps])
+    deps = depset(transitive = [dep[DefaultInfo].default_runfiles.files for dep in ctx.attr.deps] +
+                               [dep[DefaultInfo].files for dep in ctx.attr.deps])
     out = ctx.outputs.output
 
     files = []
@@ -76,7 +77,7 @@ def py_venv(name, deps = None, extra_pip_commands = None):
     py_binary(
         name = name,
         srcs = ["@rules_pyvenv//:build_env.py"],
-	deps = ["@rules_pyvenv//vendor/importlib_metadata"],
+        deps = ["@rules_pyvenv//vendor/importlib_metadata"],
         data = [out_label] + deps,
         main = "@rules_pyvenv//:build_env.py",
         env = {
