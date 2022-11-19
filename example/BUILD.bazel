@@ -25,7 +25,7 @@ py_venv(
         requirement("numpy"),
     ],
     extra_pip_commands = [
-        "install ipython jupyter-console",
+#        "install ipython jupyter-console",
     ]
 )
 

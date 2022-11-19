@@ -50,7 +50,7 @@ def path_starts_with(path: pathlib.Path, prefix: pathlib.Path) -> bool:
 
 def get_site_packages_path(
     workspace: str, path: pathlib.Path, imports: List[pathlib.Path]
-) -> Optional[pathlib.Path]:
+) -> pathlib.Path:
     # Import prefixes start with the workspace name, which might be the local workspace.
     # We first normalize the given path so that it starts with its workspace name.
     if path.parts[0] == "..":
@@ -74,6 +74,8 @@ def get_site_packages_path(
     # off wspath.
     include_path = wspath.relative_to(wspath.parts[0])
     print(f"Warning: [{path}] didn't match any imports. Including as [{include_path}]")
+
+    return include_path
 
 
 def is_external(file_: pathlib.Path) -> bool:
@@ -117,9 +119,6 @@ def get_files(build_env_input: Dict) -> List[EnvFile]:
 
         for path in paths:
             site_packages_path = get_site_packages_path(workspace, path, imports)
-            if not site_packages_path:
-                continue
-
             files.append(EnvFile(path, site_packages_path))
 
     return files
