@@ -59,7 +59,7 @@ _py_venv_deps = rule(
     toolchains = [PYTHON_TOOLCHAIN_TYPE],
 )
 
-def py_venv(name, deps = None, extra_pip_commands = None):
+def py_venv(name, deps = None, extra_pip_commands = None, **kwargs):
     deps = deps or []
     extra_pip_commands = extra_pip_commands or []
 
@@ -71,15 +71,17 @@ def py_venv(name, deps = None, extra_pip_commands = None):
         deps = deps,
         commands = extra_pip_commands,
         output = out_name,
+        **kwargs,
     )
 
     py_binary(
         name = name,
         srcs = ["@rules_pyvenv//:build_env.py"],
-	deps = ["@rules_pyvenv//vendor/importlib_metadata"],
+        deps = ["@rules_pyvenv//vendor/importlib_metadata"],
         data = [out_label] + deps,
         main = "@rules_pyvenv//:build_env.py",
         env = {
             "BUILD_ENV_INPUT": "$(location " + out_label + ")",
         },
+        **kwargs,
     )
