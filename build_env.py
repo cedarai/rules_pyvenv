@@ -98,6 +98,7 @@ def find_site_packages(env_path: pathlib.Path) -> pathlib.Path:
 def get_files(build_env_input: Dict) -> List[EnvFile]:
     files = []
 
+    always_link = build_env_input.get("always_link", False)
     imports = [pathlib.Path(imp) for imp in build_env_input["imports"]]
     workspace = build_env_input["workspace"]
     for depfile in build_env_input["files"]:
@@ -105,10 +106,6 @@ def get_files(build_env_input: Dict) -> List[EnvFile]:
         # Only generated workspace files are kept.
         type_ = depfile["t"]
         input_path = pathlib.Path(depfile["p"])
-
-        # Only add external and generated files
-        if not (is_external(input_path) or type_ == "G"):
-            continue
 
         # If this is a directory, expand to each recursive child.
         if input_path.is_dir():
@@ -119,7 +116,8 @@ def get_files(build_env_input: Dict) -> List[EnvFile]:
 
         for path in paths:
             site_packages_path = get_site_packages_path(workspace, path, imports)
-            files.append(EnvFile(path, site_packages_path))
+            if site_packages_path != path or always_link:
+                files.append(EnvFile(path, site_packages_path))
 
     return files
 
