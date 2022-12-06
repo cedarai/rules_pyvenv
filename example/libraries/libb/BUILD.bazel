@@ -1,0 +1,7 @@
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "libb",
+    srcs = ["libb.py"],
+)
+

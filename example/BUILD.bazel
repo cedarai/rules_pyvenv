@@ -21,12 +21,30 @@ load("@rules_python//python/pip_install:requirements.bzl", "compile_pip_requirem
 py_venv(
     name = "venv",
     deps = [
+	"//libraries/liba",
         requirement("black"),
         requirement("numpy"),
     ],
     extra_pip_commands = [
 #        "install ipython jupyter-console",
     ]
+)
+
+py_venv(
+    name = "venv_only_local",
+    deps = [
+        "//libraries/liba",
+        "//libraries/libb",
+    ],
+)
+
+py_venv(
+    name = "venv_only_local_always_link",
+    deps = [
+        "//libraries/liba",
+        "//libraries/libb",
+    ],
+    always_link = True,
 )
 
 compile_pip_requirements(

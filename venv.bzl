@@ -44,6 +44,7 @@ def _py_venv_deps_impl(ctx):
         "imports": imports,
         "files": files,
         "commands": ctx.attr.commands,
+        "always_link": ctx.attr.always_link,
     }
     ctx.actions.write(out, json.encode(doc))
 
@@ -54,12 +55,13 @@ _py_venv_deps = rule(
     attrs = {
         "deps": attr.label_list(),
         "commands": attr.string_list(),
+        "always_link": attr.bool(),
         "output": attr.output(),
     },
     toolchains = [PYTHON_TOOLCHAIN_TYPE],
 )
 
-def py_venv(name, deps = None, extra_pip_commands = None, **kwargs):
+def py_venv(name, deps = None, extra_pip_commands = None, always_link = False, **kwargs):
     deps = deps or []
     extra_pip_commands = extra_pip_commands or []
 
@@ -70,6 +72,7 @@ def py_venv(name, deps = None, extra_pip_commands = None, **kwargs):
         name = deps_name,
         deps = deps,
         commands = extra_pip_commands,
+        always_link = always_link,
         output = out_name,
         **kwargs,
     )
