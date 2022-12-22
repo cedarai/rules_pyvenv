@@ -47,6 +47,15 @@ py_venv(
     always_link = True,
 )
 
+py_venv(
+    name = "venv_relative_workspace_root",
+    venv_location = ".venv",
+    deps = [
+        "//libraries/liba",
+        "//libraries/libb",
+    ],
+)
+
 compile_pip_requirements(
     name = "requirements",
     extra_args = ["--allow-unsafe"],

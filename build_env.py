@@ -217,7 +217,7 @@ def run_additional_commands(env_path: pathlib.Path, commands: List[str]) -> None
 def main():
     if "BUILD_ENV_INPUT" not in os.environ:
         raise Exception("Missing BUILD_ENV_INPUT environment variable")
-    if len(sys.argv) != 2:
+    if "VENV_LOCATION" not in os.environ and len(sys.argv) != 2:
         raise Exception(f"Usage: {sys.argv} <venv path>")
 
     with open(os.environ["BUILD_ENV_INPUT"]) as f:
@@ -229,8 +229,11 @@ def main():
     # files in their actual location
     sys._base_executable = str(pathlib.Path(sys._base_executable).resolve())
 
-    cwd = os.environ.get("BUILD_WORKING_DIRECTORY", os.getcwd())
-    env_path = pathlib.Path(cwd) / pathlib.Path(sys.argv[1])
+    if "VENV_LOCATION" in os.environ:
+        env_path = pathlib.Path(os.environ["BUILD_WORKSPACE_DIRECTORY"]) / os.environ["VENV_LOCATION"]
+    else:
+        cwd = os.environ.get("BUILD_WORKING_DIRECTORY", os.getcwd())
+        env_path = pathlib.Path(cwd) / pathlib.Path(sys.argv[1])
 
     builder = venv.EnvBuilder(clear=True, symlinks=True, with_pip=True)
     builder.create(str(env_path))
