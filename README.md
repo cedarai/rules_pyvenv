@@ -23,6 +23,8 @@ If using the system-provided Python on Debian/Ubuntu, you may need to run
 apt install python3.8-venv
 ```
 
+On Windows, [you need to enable symlink support](https://bazel.build/configure/windows#symlink).
+
 ## Example
 ```
 $ cd example
