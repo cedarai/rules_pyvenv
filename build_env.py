@@ -83,14 +83,22 @@ def is_external(file_: pathlib.Path) -> bool:
 
 
 def find_site_packages(env_path: pathlib.Path) -> pathlib.Path:
-    lib_path = env_path / "lib"
+    if sys.platform == 'win32':
+        lib_path = env_path / "Lib"
 
-    # We should find one "pythonX.X" directory in here.
-    for child in lib_path.iterdir():
-        if child.name.startswith("python"):
-            site_packages_path = child / "site-packages"
-            if site_packages_path.exists():
-                return site_packages_path
+        site_packages_path = lib_path / "site-packages"
+        if site_packages_path.exists():
+            return site_packages_path
+
+    else:
+        lib_path = env_path / "lib"
+
+        # We should find one "pythonX.X" directory in here.
+        for child in lib_path.iterdir():
+            if child.name.startswith("python"):
+                site_packages_path = child / "site-packages"
+                if site_packages_path.exists():
+                    return site_packages_path
 
     raise Exception("Unable to find site-packages path in venv")
 
@@ -163,11 +171,14 @@ def entry_points(path: List[str], **params) -> importlib_metadata.EntryPoints:
 
 def generate_console_scripts(env_path: pathlib.Path) -> None:
     site_packages = find_site_packages(env_path)
-    bin = env_path / "bin"
+    if sys.platform == 'win32':
+        bin_path = env_path / "Scripts"
+    else:
+        bin_path = env_path / "bin"
 
     console_scripts = entry_points(path=[str(site_packages)], group="console_scripts")
     for ep in console_scripts:
-        script = bin / ep.name
+        script = bin_path / ep.name
         if script.exists():
             continue
         script.write_text(
