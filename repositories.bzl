@@ -34,12 +34,32 @@ py_library(
     srcs = glob(["importlib_metadata/*.py"]),
     imports = ["."],
     deps = [
+        "@{name}//typing_extensions",
         "@{name}//zipp",
     ],
 )
 """.format(
         name = rctx.name,
     ))
+
+    rctx.download_and_extract(
+        output = "typing_extensions",
+        sha256 = "c8fd5561e1bd88b743ef2ee065a5e661b2fd7b56e9cbe9ae2aeb928f41438819",
+        stripPrefix = "typing_extensions-4.5.0/src",
+        url = "https://github.com/python/typing_extensions/archive/refs/tags/4.5.0.tar.gz",
+    )
+
+    rctx.file("typing_extensions/BUILD.bazel", """
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "typing_extensions",
+    srcs = [
+        "typing_extensions.py",
+    ],
+    imports = ["."],
+)
+""")
 
     rctx.download_and_extract(
         output = "zipp",
