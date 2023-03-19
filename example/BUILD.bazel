@@ -12,22 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-package(default_visibility = ["//visibility:public"])
-
-load("@rules_pyvenv//:venv.bzl", "py_venv")
+load("@py_venv//:venv.bzl", "py_venv")
 load("@example_deps//:requirements.bzl", "requirement")
 load("@rules_python//python/pip_install:requirements.bzl", "compile_pip_requirements")
 
+package(default_visibility = ["//visibility:public"])
+
 py_venv(
     name = "venv",
+    extra_pip_commands = [
+        #        "install ipython jupyter-console",
+    ],
     deps = [
-	"//libraries/liba",
+        "//libraries/liba",
         requirement("black"),
         requirement("numpy"),
     ],
-    extra_pip_commands = [
-#        "install ipython jupyter-console",
-    ]
 )
 
 py_venv(
@@ -40,11 +40,11 @@ py_venv(
 
 py_venv(
     name = "venv_only_local_always_link",
+    always_link = True,
     deps = [
         "//libraries/liba",
         "//libraries/libb",
     ],
-    always_link = True,
 )
 
 py_venv(

@@ -74,7 +74,7 @@ def py_venv(name, deps = None, extra_pip_commands = None, always_link = False, v
         commands = extra_pip_commands,
         always_link = always_link,
         output = out_name,
-        **kwargs,
+        **kwargs
     )
 
     env = {
@@ -87,9 +87,9 @@ def py_venv(name, deps = None, extra_pip_commands = None, always_link = False, v
     py_binary(
         name = name,
         srcs = ["@rules_pyvenv//:build_env.py"],
-        deps = ["@rules_pyvenv//vendor/importlib_metadata"],
+        deps = ["@%%NAME%%//importlib_metadata"],
         data = [out_label] + deps,
         main = "@rules_pyvenv//:build_env.py",
         env = env,
-        **kwargs,
+        **kwargs
     )
