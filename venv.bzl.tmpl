@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_python//python:defs.bzl", "py_binary")
+load("@rules_python//python:defs.bzl", _py_binary = "py_binary")
 
 PYTHON_TOOLCHAIN_TYPE = "@bazel_tools//tools/python:toolchain_type"
 
@@ -61,7 +61,7 @@ _py_venv_deps = rule(
     toolchains = [PYTHON_TOOLCHAIN_TYPE],
 )
 
-def py_venv(name, deps = None, extra_pip_commands = None, always_link = False, venv_location = None, **kwargs):
+def py_venv(name, deps = None, extra_pip_commands = None, always_link = False, venv_location = None, py_binary = _py_binary, **kwargs):
     deps = deps or []
     extra_pip_commands = extra_pip_commands or []
 
@@ -74,7 +74,6 @@ def py_venv(name, deps = None, extra_pip_commands = None, always_link = False, v
         commands = extra_pip_commands,
         always_link = always_link,
         output = out_name,
-        **kwargs,
     )
 
     env = {
@@ -87,9 +86,9 @@ def py_venv(name, deps = None, extra_pip_commands = None, always_link = False, v
     py_binary(
         name = name,
         srcs = ["@rules_pyvenv//:build_env.py"],
-        deps = ["@rules_pyvenv//vendor/importlib_metadata"],
+        deps = ["@%%NAME%%//importlib_metadata"],
         data = [out_label] + deps,
         main = "@rules_pyvenv//:build_env.py",
         env = env,
-        **kwargs,
+        **kwargs
     )

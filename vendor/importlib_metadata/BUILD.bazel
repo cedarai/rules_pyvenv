@@ -1,8 +1,0 @@
-package(default_visibility = ["//visibility:public"])
-
-py_library(
-    name = "importlib_metadata",
-    srcs = glob(["**/*.py"]),
-    deps = ["//vendor/zipp"],
-    imports = ["."],
-)

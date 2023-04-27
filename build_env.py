@@ -144,7 +144,7 @@ def install_data_file(env_path: pathlib.Path, file: EnvFile) -> None:
 
 def install_site_file(site_packages_path: pathlib.Path, file: EnvFile) -> None:
     site_path = site_packages_path / file.site_packages_path
-    if not site_path.exists():
+    if not site_path.exists() and file.path.exists():
         site_path.parent.mkdir(parents=True, exist_ok=True)
         site_path.symlink_to(file.path.resolve())
 
