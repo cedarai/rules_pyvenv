@@ -15,15 +15,18 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@rules_pyvenv//:venv.bzl", "py_venv")
-load("@example_deps//:requirements.bzl", "requirement")
+load("@example_deps//:requirements.bzl", "requirement", "data_requirement")
 load("@rules_python//python/pip_install:requirements.bzl", "compile_pip_requirements")
 
 py_venv(
     name = "venv",
     deps = [
-	"//libraries/liba",
+        "//libraries/liba",
         requirement("black"),
         requirement("numpy"),
+    ],
+    data = [
+        data_requirement("black"),
     ],
     extra_pip_commands = [
 #        "install ipython jupyter-console",

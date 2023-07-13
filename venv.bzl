@@ -65,6 +65,7 @@ _py_venv_deps = rule(
 
 def py_venv(name, deps = None, data = None, extra_pip_commands = None, always_link = False, venv_location = None, **kwargs):
     deps = deps or []
+    data = data or []
     extra_pip_commands = extra_pip_commands or []
 
     deps_name = "_" + name + "_deps"
