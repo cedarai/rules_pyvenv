@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import collections
+from enum import Enum
 import itertools
 import json
 import os
@@ -21,12 +21,20 @@ import subprocess
 import sys
 import textwrap
 import venv
-from typing import Dict, List, Optional
+from typing import Dict, List, NamedTuple
 
 import importlib_metadata
 
 
-EnvFile = collections.namedtuple("EnvFile", ["path", "site_packages_path"])
+class EnvPathType(Enum):
+    SITE_PACKAGES = 1
+    DATA = 2
+
+
+class EnvFile(NamedTuple):
+    path: pathlib.Path
+    env_path: pathlib.Path
+    type_: EnvPathType = EnvPathType.SITE_PACKAGES
 
 
 def console_script(env_path: pathlib.Path, module: str, func: str) -> str:
@@ -48,9 +56,9 @@ def path_starts_with(path: pathlib.Path, prefix: pathlib.Path) -> bool:
     return path.parts[: len(prefix.parts)] == prefix.parts
 
 
-def get_site_packages_path(
+def get_env_path(
     workspace: str, path: pathlib.Path, imports: List[pathlib.Path]
-) -> pathlib.Path:
+) -> EnvFile:
     # Import prefixes start with the workspace name, which might be the local workspace.
     # We first normalize the given path so that it starts with its workspace name.
     if path.parts[0] == "..":
@@ -62,12 +70,16 @@ def get_site_packages_path(
 
     for imp in imports:
         if path_starts_with(wspath, imp):
-            return wspath.relative_to(imp)
+            return EnvFile(path, wspath.relative_to(imp))
+
+        imp_data = imp.parent / "data"
+        if path_starts_with(wspath, imp_data):
+            return EnvFile(path, wspath.relative_to(imp_data), EnvPathType.DATA)
 
     if not is_external:
         # If the input wasn't an external path and it didn't match any import prefixes,
         # just return it as given.
-        return path
+        return EnvFile(path, path)
 
     # External file that didn't match imports. Include but warn.
     # We include it as relative to its workspace directory, so strip the first component
@@ -75,7 +87,7 @@ def get_site_packages_path(
     include_path = wspath.relative_to(wspath.parts[0])
     print(f"Warning: [{path}] didn't match any imports. Including as [{include_path}]")
 
-    return include_path
+    return EnvFile(path, include_path)
 
 
 def is_external(file_: pathlib.Path) -> bool:
@@ -123,27 +135,32 @@ def get_files(build_env_input: Dict) -> List[EnvFile]:
             paths = [input_path]
 
         for path in paths:
-            site_packages_path = get_site_packages_path(workspace, path, imports)
-            if site_packages_path != path or always_link:
-                files.append(EnvFile(path, site_packages_path))
+            env_file = get_env_path(workspace, path, imports)
+            if env_file.env_path != path or always_link:
+                files.append(env_file)
 
     return files
 
 
 def is_data_file(file: EnvFile) -> bool:
-    return file.site_packages_path.parts[0].endswith(".data")
+    return (
+        file.type_ == EnvPathType.DATA
+        or file.env_path.parts[0].endswith(".data")
+    )
 
 
 def install_data_file(env_path: pathlib.Path, file: EnvFile) -> None:
     if (
-        len(file.site_packages_path.parts) > 2
-        and file.site_packages_path.parts[1] == "scripts"
+        len(file.env_path.parts) > 2
+        and file.env_path.parts[1] == "scripts"
     ):
         install_included_script(env_path, file.path)
+    elif file.type_ == EnvPathType.DATA:
+        install_site_file(env_path, file)
 
 
 def install_site_file(site_packages_path: pathlib.Path, file: EnvFile) -> None:
-    site_path = site_packages_path / file.site_packages_path
+    site_path = site_packages_path / file.env_path
     if not site_path.exists():
         site_path.parent.mkdir(parents=True, exist_ok=True)
         site_path.symlink_to(file.path.resolve())

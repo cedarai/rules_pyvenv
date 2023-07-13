@@ -27,10 +27,11 @@ def _py_venv_deps_impl(ctx):
         imports.extend([i for i in dep[PyInfo].imports.to_list() if i not in imports])
 
     deps = depset(transitive = [dep[DefaultInfo].default_runfiles.files for dep in ctx.attr.deps])
+    data = depset(transitive = [data[DefaultInfo].files for data in ctx.attr.data])
     out = ctx.outputs.output
 
     files = []
-    for dep in deps.to_list():
+    for dep in deps.to_list() + data.to_list():
         # Skip files that are provided by the python toolchain.
         # They don't need to be in the venv.
         if dep in toolchain_files:
@@ -54,6 +55,7 @@ _py_venv_deps = rule(
     implementation = _py_venv_deps_impl,
     attrs = {
         "deps": attr.label_list(),
+        "data": attr.label_list(),
         "commands": attr.string_list(),
         "always_link": attr.bool(),
         "output": attr.output(),
@@ -61,7 +63,7 @@ _py_venv_deps = rule(
     toolchains = [PYTHON_TOOLCHAIN_TYPE],
 )
 
-def py_venv(name, deps = None, extra_pip_commands = None, always_link = False, venv_location = None, **kwargs):
+def py_venv(name, deps = None, data = None, extra_pip_commands = None, always_link = False, venv_location = None, **kwargs):
     deps = deps or []
     extra_pip_commands = extra_pip_commands or []
 
@@ -71,6 +73,7 @@ def py_venv(name, deps = None, extra_pip_commands = None, always_link = False, v
     _py_venv_deps(
         name = deps_name,
         deps = deps,
+        data = data,
         commands = extra_pip_commands,
         always_link = always_link,
         output = out_name,
@@ -88,7 +91,7 @@ def py_venv(name, deps = None, extra_pip_commands = None, always_link = False, v
         name = name,
         srcs = ["@rules_pyvenv//:build_env.py"],
         deps = ["@rules_pyvenv//vendor/importlib_metadata"],
-        data = [out_label] + deps,
+        data = [out_label] + deps + data,
         main = "@rules_pyvenv//:build_env.py",
         env = env,
         **kwargs,
