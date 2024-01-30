@@ -166,13 +166,20 @@ def install_site_file(site_packages_path: pathlib.Path, file: EnvFile) -> None:
         site_path.symlink_to(file.path.resolve())
 
 
-def install_files(env_path: pathlib.Path, files: List[EnvFile]) -> None:
+def install_files(env_path: pathlib.Path, files: List[EnvFile], add_pth: bool) -> None:
     site_packages_path = find_site_packages(env_path)
+    pth = site_packages_path / "venv.pth"
+    pths = set()
     for file in files:
         if is_data_file(file):
             install_data_file(env_path, file)
         else:
-            install_site_file(site_packages_path, file)
+            if add_pth:
+                pths.add(file.env_path.parts[0])
+            else:
+                install_site_file(site_packages_path, file)
+    if add_pth:
+        pth.write_text("\n".join(pths), encoding="utf-8")
 
 
 # A copy of importlib_metadata:entry_points that takes a list of search paths.
@@ -266,7 +273,7 @@ def main():
     builder = venv.EnvBuilder(clear=True, symlinks=True, with_pip=True)
     builder.create(str(env_path))
 
-    install_files(env_path, files)
+    install_files(env_path, files, build_env_input.get("add_pth", False))
     generate_console_scripts(env_path)
 
     extra_commands = build_env_input.get("commands")
