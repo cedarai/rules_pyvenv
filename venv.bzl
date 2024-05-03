@@ -78,11 +78,11 @@ def py_venv(name, deps = None, data = None, extra_pip_commands = None, always_li
         commands = extra_pip_commands,
         always_link = always_link,
         output = out_name,
-        **kwargs,
+        **kwargs
     )
 
     env = {
-        "BUILD_ENV_INPUT": "$(location " + out_label + ")",
+        "BUILD_ENV_INPUT": "$(rootpath " + out_label + ")",
     }
 
     if venv_location:
@@ -95,5 +95,5 @@ def py_venv(name, deps = None, data = None, extra_pip_commands = None, always_li
         data = [out_label] + deps + data,
         main = "@rules_pyvenv//:build_env.py",
         env = env,
-        **kwargs,
+        **kwargs
     )
