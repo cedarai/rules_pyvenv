@@ -45,6 +45,7 @@ def _py_venv_deps_impl(ctx):
         "workspace": ctx.workspace_name,
         "imports": imports,
         "files": files,
+        "add_pth": ctx.attr.add_pth,
         "commands": ctx.attr.commands,
         "always_link": ctx.attr.always_link,
     }
@@ -59,12 +60,13 @@ _py_venv_deps = rule(
         "data": attr.label_list(),
         "commands": attr.string_list(),
         "always_link": attr.bool(),
+        "add_pth": attr.bool(),
         "output": attr.output(),
     },
     toolchains = [PYTHON_TOOLCHAIN_TYPE],
 )
 
-def py_venv(name, deps = None, data = None, extra_pip_commands = None, always_link = False, venv_location = None, **kwargs):
+def py_venv(name, deps = None, data = None, extra_pip_commands = None, always_link = False, venv_location = None, add_pth = False, **kwargs):
     deps = deps or []
     data = data or []
     extra_pip_commands = extra_pip_commands or []
@@ -79,6 +81,7 @@ def py_venv(name, deps = None, data = None, extra_pip_commands = None, always_li
         commands = extra_pip_commands,
         always_link = always_link,
         output = out_name,
+        add_pth = add_pth,
         **kwargs,
     )
 
