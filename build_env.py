@@ -81,11 +81,9 @@ def get_env_path(
         # just return it as given.
         return EnvFile(path, path)
 
-    # External file that didn't match imports. Include but warn.
-    # We include it as relative to its workspace directory, so strip the first component
-    # off wspath.
+    # External file that didn't match imports. Include it as relative to its workspace
+    # directory, stripping the first component off wspath.
     include_path = wspath.relative_to(wspath.parts[0])
-    print(f"Warning: [{path}] didn't match any imports. Including as [{include_path}]")
 
     return EnvFile(path, include_path)
 
@@ -95,7 +93,7 @@ def is_external(file_: pathlib.Path) -> bool:
 
 
 def find_site_packages(env_path: pathlib.Path) -> pathlib.Path:
-    if sys.platform == 'win32':
+    if sys.platform == "win32":
         lib_path = env_path / "Lib"
 
         site_packages_path = lib_path / "site-packages"
@@ -143,17 +141,11 @@ def get_files(build_env_input: Dict) -> List[EnvFile]:
 
 
 def is_data_file(file: EnvFile) -> bool:
-    return (
-        file.type_ == EnvPathType.DATA
-        or file.env_path.parts[0].endswith(".data")
-    )
+    return file.type_ == EnvPathType.DATA or file.env_path.parts[0].endswith(".data")
 
 
 def install_data_file(env_path: pathlib.Path, file: EnvFile) -> None:
-    if (
-        len(file.env_path.parts) > 2
-        and file.env_path.parts[1] == "scripts"
-    ):
+    if len(file.env_path.parts) > 2 and file.env_path.parts[1] == "scripts":
         install_included_script(env_path, file.path)
     elif file.type_ == EnvPathType.DATA:
         install_site_file(env_path, file)
@@ -188,7 +180,7 @@ def entry_points(path: List[str], **params) -> importlib_metadata.EntryPoints:
 
 def generate_console_scripts(env_path: pathlib.Path) -> None:
     site_packages = find_site_packages(env_path)
-    if sys.platform == 'win32':
+    if sys.platform == "win32":
         bin_path = env_path / "Scripts"
     else:
         bin_path = env_path / "bin"
@@ -211,7 +203,7 @@ def install_included_script(env_path: pathlib.Path, script_file: pathlib.Path) -
     #   Python scripts must appear in scripts and begin with exactly b'#!python' in order to enjoy script wrapper
     #   generation and #!python rewriting at install time. They may have any or no extension.
     if script_text.startswith(b"#!python"):
-        shebang = f'#!{env_path / "bin/python3"}'.encode("utf-8")
+        shebang = f"#!{env_path / 'bin/python3'}".encode("utf-8")
         script_text = shebang + script_text[len(b"#!python") :]
 
     script = env_path / "bin" / script_file.name
@@ -258,7 +250,10 @@ def main():
     sys._base_executable = str(pathlib.Path(sys._base_executable).resolve())
 
     if "VENV_LOCATION" in os.environ:
-        env_path = pathlib.Path(os.environ["BUILD_WORKSPACE_DIRECTORY"]) / os.environ["VENV_LOCATION"]
+        env_path = (
+            pathlib.Path(os.environ["BUILD_WORKSPACE_DIRECTORY"])
+            / os.environ["VENV_LOCATION"]
+        )
     else:
         cwd = os.environ.get("BUILD_WORKING_DIRECTORY", os.getcwd())
         env_path = pathlib.Path(cwd) / pathlib.Path(sys.argv[1])
