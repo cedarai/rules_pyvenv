@@ -134,7 +134,19 @@ def get_files(build_env_input: Dict) -> List[EnvFile]:
 
         for path in paths:
             env_file = get_env_path(workspace, path, imports)
-            if env_file.env_path != path or always_link:
+
+            # A main-workspace *source* file whose env path is unchanged is already
+            # importable from the workspace root, so linking it is redundant. That is
+            # what `env_path != path` filters out, and why `always_link` overrides it.
+            #
+            # A *generated* file (type "G") is not: it only exists under bazel-out, so
+            # it must be linked even when its env path equals its short path. This is
+            # how protobuf/gRPC codegen and other rule-generated modules reach the
+            # venv. 56057e9 ("Better support for local libraries") replaced the old
+            # `is_external(input_path) or type_ == "G"` gate with `env_path != path`
+            # and lost this case, silently emptying site-packages of generated
+            # main-workspace modules.
+            if env_file.env_path != path or always_link or type_ == "G":
                 files.append(env_file)
 
     return files
